@@ -82,12 +82,6 @@
 <br /><input type="submit" value="Choose" />
 </form>
 
-    <!--
-    Show the calendar list (if we have it).  This will need to be turned into
-    a form from which calendars can be picked. Up to three entries are
-    shown in each row (but the order is across then down; I would
-    prefer down then across). 
-    -->
 {% if g.calendars is defined  %}
   <div class="row">
   {% for cal in g.calendars if cal.selected %}
@@ -99,7 +93,47 @@
          {% endif %}
   {% endfor %}
   </div>
+
+  <button onclick ="event_function()">Use Selected Calendars</button>
+
 {% endif %}
+
+{% if session.busy_list is defined %}
+<h2>Busy Times:</h2>
+    {% for conflict_event in session.busy_list %}
+    <div class="row">
+      <div class="col-md-6">  
+        {{conflict_event}}
+      </div>
+    </div>
+    {% endfor %}
+{% endif %}
+
+
+<script>
+
+$SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
+
+function CalcBusyTimes(){
+    selected_cal = "";
+    $('input[type=checkbox]').each(function () {
+       if (this.checked)
+       {
+            console.log(this.id);
+            selected_cal = selected_cal + " " + this.id
+       }
+  });
+  
+    $.ajax({
+    dataType: "json",
+    url: $SCRIPT_ROOT + '/busy_times',
+    data: {calender: selected_cal},
+    complete: function(){ 
+            location.assign($SCRIPT_ROOT + '/busy_times'); }
+    });
+}
+
+</script>
     
 
   </div>  <!-- container (for bootstrap) -->

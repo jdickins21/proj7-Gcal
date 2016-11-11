@@ -336,6 +336,87 @@ def cal_sort_key( cal ):
        primary_key = "X"
     return (primary_key, selected_key, cal["summary"])
 
+##################
+#
+# My Code
+#
+##################
+
+@app.route("/busy_time")
+def busy_time():
+  
+  #credentials
+  credentials = client.OAuth2Credentials.from_json(flask.session['credentials'])
+  service = get_gcal_service(credentials)
+
+    #args
+  temp_string = request.args.get('calender', 0, type=str)
+  calender_list = temp_string.split()
+
+  busy_times = {}
+
+  for id in flask.session['selected_cal']:
+        events = service.events().list(calendarId=id, pageToken=None).execute()
+        event = {}
+        for event in events['items']:
+            if ('transparency' in event) and event['transparency']=='transparent':
+                continue 
+            start_datetime = arrow.get(event['start']['dateTime'])
+            end_datetime = arrow.get(event['end']['dateTime'])
+            if overlap(start_datetime, end_datetime):   
+                event[event['id']] = [event['summary'], start_datetime.isoformat(), end_datetime.isoformat()]
+        busy_times[id] = event
+
+  busy_list = [] #list of strings
+  for cal in busy_times:
+      cal_dict = busy_times[cal]
+      for conflict_event in cal_dict:
+          busy_str = ""
+          info_list = cal_dict[conflict_event]
+          app.logger.debug(info_list)
+          busy_str = busy_str + (info_list[0]) + ": "
+          busy_str = busy_str + convert(info_list[1]) + " -  "
+          busy_str = busy_str + convert(info_list[2])
+          busy_list.append(busy_str)
+  app.logger.debug(busy_list)
+  flask.session['busy_list'] = busy_list
+  return render_template('index.html')
+
+
+def overlap(event_sdt, event_edt):
+
+#sdt = start date time 
+#edt = end date time 
+    event_sd = event_sdt.date()
+    event_ed = event_edt.date()
+    event_st = event_sdt.time()
+    event_et = event_edt.time()
+    desired_sd= arrow.get(flask.session['begin_date']).date()
+    desired_ed = arrow.get(flask.session['end_date']).date()
+    desired_st = arrow.get(flask.session['begin_time']).time()
+    desired_et = arrow.get(flask.session['end_time']).time()
+    if not (desired_sd <= event_sd <= desired_ed) or not (desired_sd <= event_ed <= desired_ed):
+        return False 
+    elif (event_et <= desired_st):
+        return False 
+    elif (event_st >= desired_et):
+        return False
+    else:
+        return True
+
+
+def convert(date_time):
+
+    arrow_date_time = arrow.get(date_time)
+    local_arrow = arrow_date_time.to('local')
+    formatted_str = local_arrow.format('MM/DD/YYYY h:mm A')
+    return formatted_str
+
+##################
+#
+# End of My Code
+#
+##################
 
 #################
 #
