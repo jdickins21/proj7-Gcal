@@ -20,7 +20,6 @@ include Makefile.local
 #  assets to reduce browser load time (fewer http requests). 
 #
 
-PYVENV = pyvenv-3.4
 
 # A locally installed copy of browserify
 BROWSERIFY=static/js/node_modules/browserify/bin/cmd.js
